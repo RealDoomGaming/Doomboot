@@ -15,6 +15,17 @@ start:
     ;; before we do that we need to test if the bios has already enabled it
     jmp check_a20
 
+;; when checking if a20 is on we can follow a specific plan:
+;; checking if it is on -> if yes continue 
+;; if it isnt on we try it with the BIOS function (int 0x15)
+;; check if it is on again
+;; if it still isnt on we can do the keyboard controller method
+;; then when checking a20 again we do it in a loop with a time out since the keyboard method can take sometime
+;; then lastly if it still didnt work we try the fast a20 method, also with a loop since the "fast" a20 can also take some time
+;; and then if it still isnt on just give up
+a20:
+    call check_a20
+
 check_a20:
     ;; we need to push some essential stuff for a20
     pushf
@@ -63,6 +74,21 @@ check_a20:
     pop ax
     mov byte [es:di], al
 
+;; with this we try to enable the a20 via the bios only, no memory needed
+enable_a20_bios:
+    mov ax, 0x2403  ;; we try to query the a20 support gate
+    int 0x15        ;; and then actually call the bios
+    jc a20_nt       ;; if it is not supported we jump to a20 not supported (jc = jump if carry, so if Cf is set jump)
+
+    test ah, ah     ;; check if ah is zero and we try to zero it so if ah != 0 then we know a20 is not supported
+    jnz a20_nt
+
+    ret
+
+;; just calls a return so we jump back to the original a20
+a20_ns:
+    ret
+/*
     ;; then after comparing and cleaning up we can finally interpret the result
     ;; if before we found out that a20 was disabled we need to enable it
     mov ax, 0
@@ -70,6 +96,7 @@ check_a20:
 
     ;; else we dont need to enable it (yippie)
     mov ax, 1
+
 
 check_a20__exit:
     pop si
@@ -79,6 +106,7 @@ check_a20__exit:
     popf
 
     ret
+*/
 
 .halt:
     jmp .halt;; jumps back to halt again and again -> infinite loop, prevents from going off into memory and executing junk
