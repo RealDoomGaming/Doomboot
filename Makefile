@@ -9,9 +9,6 @@ all: $(BIN)
 $(BIN): $(SRC)
 	$(ASM) -f bin $(SRC) -o $(BIN)
 
-run: $(BIN)
-	$(QEMU) -drive format=raw,file=$(BIN)
-
 clean:
 	rm -rf $(OBJ) $(BIN)
 

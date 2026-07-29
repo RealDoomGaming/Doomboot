@@ -13,6 +13,7 @@ start:
 
     ;; enabeling the a 20 line
     ;; before we do that we need to test if the bios has already enabled it
+    jmp check_a20
 
 check_a20:
     ;; we need to push some essential stuff for a20
@@ -65,12 +66,21 @@ check_a20:
     ;; then after comparing and cleaning up we can finally interpret the result
     ;; if before we found out that a20 was disabled we need to enable it
     mov ax, 0
-    je ;; future enabeling here
+    je check_a20__exit;; future enabeling here
 
     ;; else we dont need to enable it (yippie)
     mov ax, 1
 
-.halt
+check_a20__exit:
+    pop si
+    pop di
+    pop es
+    pop ds
+    popf
+
+    ret
+
+.halt:
     jmp .halt;; jumps back to halt again and again -> infinite loop, prevents from going off into memory and executing junk
 
 ;; ($-$$) is the current size of our programm
