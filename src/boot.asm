@@ -28,18 +28,18 @@ start:
 ;; and then if it still isnt on just give up
 a20:
     call check_a20         ;; firstly we check if the a20 gate is enabled by default
-    je a20_enabled         ;; is enabled
+    jne a20_enabled         ;; is enabled
 
     call enable_a20_bios
     ;; we dont need a jump here if it is enabled now because we have that in the enable_a20_bios
 
     call enable_a20_keyboard ;; try enabeling a20 with the keyboard controller
     call check_a20           ;; check it again
-    je a20_enabled           ;; is enabled now
+    jne a20_enabled           ;; is enabled now
 
     call enable_a20_fast    ;; try enabeling the a20 gate with the fast a20 method
     call check_a20          ;; checking if it worked
-    je a20_enabled          ;; is enabled now
+    jne a20_enabled          ;; is enabled now
 
     ;; if it still didnt work we just give up
     jmp a20_completely_failed
