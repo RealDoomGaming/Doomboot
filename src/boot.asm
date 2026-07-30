@@ -111,9 +111,13 @@ enable_a20_keyboard:
     ;; we will use the read stuff later
     call a20wait    ;; wait again like before
     mov al, 0xD0    ;; then move the command 0xD0 (read controller output port) to the controller
-    out 0x64, al    ;; then we actually read it
+    out 0x64, al    ;; then we read the controller output port
     ;; we read this because one bit of the stuff we get back from the controller controls the a20 gate
     ;; but we have to be carefull because it controlls really really important stuff
+
+    ;; then we actually have to still read it, not only output it from the controller
+    call a20wait2    ;; we wait for something different this time, we wait until the controller has actually put the byte we want in its output buffer
+
 
 
 ;; this just waits until the input buffer is clear
@@ -122,6 +126,13 @@ a20wait:
     test al, 2      ;; bit 1 (value 2) of the status byte is the "input type full" flag, its 1 if its still processing something
     jnz a20wait     ;; if its still busy with something else we wait in a loop
     ret             ;; else we can return
+
+;; this is the same as the a20wait but waits until the bit we requested has arrived in the controller
+a20wait2:
+    in al, 0x64     ;; we read from the port 0x64 again like before
+    test al, 1      ;; bit 0 (value 1) has the status byte "output byte full", and its 1 when the controller has the data ready for you
+    jz a20wait2     ;; then our loop again
+    ret             ;; and the return
 
 ;; just calls a return so we jump back to the original a20
 a20_ns:
