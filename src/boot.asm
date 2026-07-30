@@ -197,11 +197,6 @@ a20_ns:
 a20_failed:
     ret
 
-a20_completely_failed:
-    ;; here we know we couldnt enable a20 at all so we just print an error message and halt the cpu forever
-    mov si, a20_failed_err_msg
-    call print_string
-
 ;; we use the bios function for this because it is the easiest when we are still in 16 bit mode
 print_string:
     lodsb        ;; this loads the byte at [si] into al and also increments si
@@ -213,6 +208,11 @@ print_string:
     jmp print_string  ;; then we ofc have to make it a loop
 .done:
     ret
+
+a20_completely_failed:
+    ;; here we know we couldnt enable a20 at all so we just print an error message and halt the cpu forever
+    mov si, a20_failed_err_msg
+    call print_string
 
 .halt:
     jmp .halt;; jumps back to halt again and again -> infinite loop, prevents from going off into memory and executing junk
