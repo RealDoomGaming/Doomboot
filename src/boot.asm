@@ -117,7 +117,8 @@ enable_a20_keyboard:
 
     ;; then we actually have to still read it, not only output it from the controller
     call a20wait2    ;; we wait for something different this time, we wait until the controller has actually put the byte we want in its output buffer
-
+    in al, 0x60      ;; then once we have confirmed that the data is waiting for us we read it
+    push ax
 
 
 ;; this just waits until the input buffer is clear
