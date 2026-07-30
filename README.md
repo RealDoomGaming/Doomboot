@@ -6,7 +6,7 @@ This is just a learning experience so I really have no idea where this project m
  
 - [x] Boot sector skeleton (org, bits, boot signature)
 - [x] A20 line detection via the various methods
-- [ ] A20 line enabling 
+- [x] A20 line enabling 
 - [ ] GDT setup
 - [ ] Switch to 32-bit protected mode
 - [ ] Load a second-stage bootloader (when we can work with more then 1MB) -> Maybe
