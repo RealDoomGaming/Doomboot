@@ -47,6 +47,7 @@ a20:
 a20_enabled:
     mov si, a20_success_msg
     call print_string
+    jmp halt
 
 check_a20:
     ;; we need to push some essential stuff for a20
