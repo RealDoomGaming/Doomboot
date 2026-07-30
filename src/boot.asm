@@ -103,7 +103,16 @@ enable_a20_bios:
     ret
 
 enable_a20_keyboard:
-    
+    call a20wait    ;; first thing we need to do is see if the controller is empty and isnt processing something else
+    mov al, 0xAD    ;; then with 0xAD we disable the keyboard
+    out 0x64, al    ;; 0x64 is the controllers command port so we send it to the controller itself and not the actual keyboard
+
+;; this just waits until the input buffer is clear
+a20wait:
+    in al, 0x64     ;; we read from the port 0x64 which gives us the controllers status bytes
+    test al, 2      ;; bit 1 (value 2) of the status byte is the "input type full" flag, its 1 if its still processing something
+    jnz a20wait     ;; if its still busy with something else we wait in a loop
+    ret             ;; else we can return
 
 ;; just calls a return so we jump back to the original a20
 a20_ns:
