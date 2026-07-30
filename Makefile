@@ -2,7 +2,7 @@ ASM := nasm
 QEMU := qemu-system-x86-64
 
 SRC := src/boot.asm
-BIN := build/boot.bin
+BIN := build/boot.img
 
 all: $(BIN)
 

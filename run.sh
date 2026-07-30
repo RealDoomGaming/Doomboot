@@ -2,4 +2,4 @@
 set -e
 
 make
-qemu-system-x86_64 -drive format=raw,file=build/boot.bin
+qemu-system-x86_64 -drive format=raw,file=build/boot.img
