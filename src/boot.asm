@@ -215,13 +215,13 @@ print_string:
 .halt:
     jmp .halt;; jumps back to halt again and again -> infinite loop, prevents from going off into memory and executing junk
 
-;; ($-$$) is the current size of our programm
-times 510-($-$$) db 0 ;; tells nasm to pad everything of our 512 bytes except the last 2, bootloader needs to be 512 bytes
-
 ;; error message for when we completely failed to enable the a20 gate
 a20_failed_err_msg db "Couldnt enable the a20 gate.", 0
 ;; success message for when we successfully activated the a20 gate
 a20_success_msg db "Successfully enabled the a20 gate", 0
+
+;; ($-$$) is the current size of our programm
+times 510-($-$$) db 0 ;; tells nasm to pad everything of our 512 bytes except the last 2, bootloader needs to be 512 bytes
 
 ;; only boots when it reads this (boot signature)
 dw 0xaa55
