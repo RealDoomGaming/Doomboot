@@ -45,6 +45,12 @@ a20:
     jmp a20_completely_failed
 
 a20_enabled:
+    pop si
+    pop di
+    pop es
+    pop ds
+    popf
+
     mov si, a20_success_msg
     call print_string
 
@@ -99,10 +105,10 @@ check_a20:
 enable_a20_bios:
     mov ax, 0x2403  ;; we try to query the a20 support gate
     int 0x15        ;; and then actually call the bios
-    jc a20_nt       ;; if it is not supported by the bios we jump to a20 not supported (jc = jump if carry, so if Cf is set jump)
+    jc a20_ns       ;; if it is not supported by the bios we jump to a20 not supported (jc = jump if carry, so if Cf is set jump)
 
     test ah, ah     ;; check if ah is zero and we try to zero it so if ah != 0 then we know a20 is not supported
-    jnz a20_nt      ;; if int 15 isnt supported  we jump to a20_nt again
+    jnz a20_ns      ;; if int 15 isnt supported  we jump to a20_nt again
 
     ;; then if we know the bios supports int 15 we check the gates status via the bios
     mov ax, 0x2402  ;; asks the bios what the current status is
@@ -160,7 +166,7 @@ enable_a20_keyboard:
 enable_a20_fast:
     in al, 0x92     ;; firstly we read the first byte from the System control port a on 0x92
     test al, 2      ;; then we check if bit 1 (value 2) is already set
-    jnz             ;; if it is set we know a20 is enabled
+    jnz a20_enabled ;; if it is set we know a20 is enabled
     or al, 2        ;; if its not set then we have to set it with the same way as before 
     and al, 0xFE    ;; we need to do this because we want the bit 0 to always be 0 else **bad** things will happen
     out 0x92, al    ;; now write it back onto the controller
@@ -193,26 +199,6 @@ a20_completely_failed:
     ;; here we know we couldnt enable a20 at all so we just print an error message and halt the cpu forever
     mov si, a20_failed_err_msg
     call print_string
-
-/*
-    ;; then after comparing and cleaning up we can finally interpret the result
-    ;; if before we found out that a20 was disabled we need to enable it
-    mov ax, 0
-    je check_a20__exit;; future enabeling here
-
-    ;; else we dont need to enable it (yippie)
-    mov ax, 1
-
-
-check_a20__exit:
-    pop si
-    pop di
-    pop es
-    pop ds
-    popf
-
-    ret
-*/
 
 ;; we use the bios function for this because it is the easiest when we are still in 16 bit mode
 print_string:
