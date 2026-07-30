@@ -31,7 +31,9 @@ a20:
     je ;; is enabled
     call enable_a20_bios
     ;; we dont need a jump here if it is enabled now because we have that in the enable_a20_bios
-
+    call enable_a20_keyboard ;; try enabeling a20 with the keyboard controller
+    call check_a20           ;; check it again
+    je ;; is enabled now
 
 check_a20:
     ;; we need to push some essential stuff for a20
@@ -120,6 +122,27 @@ enable_a20_keyboard:
     in al, 0x60      ;; then once we have confirmed that the data is waiting for us we read it
     push ax
 
+    ;; then we tell the controller we are about to write the new output port value
+    call a20wait    ;; wait again
+    mov al, 0xD1    ;; 0xD1 is the command for writing the next byte to the output port
+    out 0x64, al    ;; this tells the controller that we want to write the next byte into the controller output port
+
+    ;; after that we modifiy the a20 bit and send it
+    call a20wait    ;; wait wait wait
+    pop ax          ;; we pop our byte we read before
+    or al, 2        ;; then we set the controller output bit for the a20 gate
+    ;; since 2 in binary is 0000 0010 we can set bit 1 to 1 with Oring while leaving everything untouched
+    ;; and bit 1 happens to be the a20 gate line, so we only set the specific bit we care about
+    out 0x60, al    ;; then we actually set it
+
+    ;; then after doing all that we have to re-enable the keyboard
+    call a20wait
+    mov al, 0xAE    ;; this is the enable keyboard command
+    out 0x64, al    ;; and here we actually call it
+
+    ;; then lastly we have to do some cleanup
+    call a20wait
+    ret
 
 ;; this just waits until the input buffer is clear
 a20wait:
