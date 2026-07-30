@@ -27,23 +27,26 @@ start:
 ;; then lastly if it still didnt work we try the fast a20 method, also with a loop since the "fast" a20 can also take some time
 ;; and then if it still isnt on just give up
 a20:
-    call check_a20
-    je ;; is enabled
+    call check_a20         ;; firstly we check if the a20 gate is enabled by default
+    je a20_enabled         ;; is enabled
 
     call enable_a20_bios
     ;; we dont need a jump here if it is enabled now because we have that in the enable_a20_bios
 
     call enable_a20_keyboard ;; try enabeling a20 with the keyboard controller
     call check_a20           ;; check it again
-    je ;; is enabled now
+    je a20_enabled           ;; is enabled now
 
     call enable_a20_fast    ;; try enabeling the a20 gate with the fast a20 method
     call check_a20          ;; checking if it worked
-    je ;; is enabled now
+    je a20_enabled          ;; is enabled now
 
     ;; if it still didnt work we just give up
     jmp a20_completely_failed
 
+a20_enabled:
+    mov si, a20_success_msg
+    call print_string
 
 check_a20:
     ;; we need to push some essential stuff for a20
@@ -110,7 +113,7 @@ enable_a20_bios:
     jnz a20_failed  ;; we just check for an error again like we did before
     
     test al, al     ;; then via check if its now on
-    jnz             ;; if it worked we jump, we could just return and test it like before but this is just simpler and does the same thing
+    jnz a20_enabled ;; if it worked we jump, we could just return and test it like before but this is just simpler and does the same thing
 
     ret
 
@@ -186,6 +189,11 @@ a20_ns:
 a20_failed:
     ret
 
+a20_completely_failed:
+    ;; here we know we couldnt enable a20 at all so we just print an error message and halt the cpu forever
+    mov si, a20_failed_err_msg
+    call print_string
+
 /*
     ;; then after comparing and cleaning up we can finally interpret the result
     ;; if before we found out that a20 was disabled we need to enable it
@@ -206,11 +214,28 @@ check_a20__exit:
     ret
 */
 
+;; we use the bios function for this because it is the easiest when we are still in 16 bit mode
+print_string:
+    lodsb        ;; this loads the byte at [si] into al and also increments si
+    or al, al    ;; here we check if al is equal to 0, so in other words if we have reached the end of a string
+    jz .done     ;; if we are finished with the string we just jump to something which returns to where print_string was called
+    mov ah, 0x0E ;; then we select the teletype output subfunction from the bios which prints a single character to the screen
+    mov bh, 0    ;; this defines on which "page" we want the output to be, its really oldschool but it will work
+    int 0x10     ;; and then with 0x10 we call the bios and tell it to print whatever character is in al 
+    jmp print_string  ;; then we ofc have to make it a loop
+.done:
+    ret
+
 .halt:
     jmp .halt;; jumps back to halt again and again -> infinite loop, prevents from going off into memory and executing junk
 
 ;; ($-$$) is the current size of our programm
 times 510-($-$$) db 0 ;; tells nasm to pad everything of our 512 bytes except the last 2, bootloader needs to be 512 bytes
+
+;; error message for when we completely failed to enable the a20 gate
+a20_failed_err_msg db "Couldnt enable the a20 gate.", 0
+;; success message for when we successfully activated the a20 gate
+a20_success_msg db "Successfully enabled the a20 gate", 0
 
 ;; only boots when it reads this (boot signature)
 dw 0xaa55
