@@ -47,7 +47,7 @@ a20:
 a20_enabled:
     mov si, a20_success_msg
     call print_string
-    jmp .halt
+    jmp halt
 
 check_a20:
     ;; we need to push some essential stuff for a20
@@ -213,9 +213,10 @@ a20_completely_failed:
     ;; here we know we couldnt enable a20 at all so we just print an error message and halt the cpu forever
     mov si, a20_failed_err_msg
     call print_string
+    jmp halt
 
-.halt:
-    jmp .halt;; jumps back to halt again and again -> infinite loop, prevents from going off into memory and executing junk
+halt:
+    jmp halt;; jumps back to halt again and again -> infinite loop, prevents from going off into memory and executing junk
 
 ;; error message for when we completely failed to enable the a20 gate
 a20_failed_err_msg db "Couldnt enable the a20 gate.", 0
