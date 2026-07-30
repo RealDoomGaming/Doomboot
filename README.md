@@ -23,5 +23,6 @@ This is just a learning experience so I really have no idea where this project m
 
 ### Run:
 ```bash
-make clean
+chmod +x ./run.sh
+./run.sh
 ```
