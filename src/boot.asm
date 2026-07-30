@@ -45,12 +45,6 @@ a20:
     jmp a20_completely_failed
 
 a20_enabled:
-    pop si
-    pop di
-    pop es
-    pop ds
-    popf
-
     mov si, a20_success_msg
     call print_string
 
@@ -98,6 +92,13 @@ check_a20:
 
     pop ax
     mov byte [es:di], al
+
+    ;; before we return from this we need to pop everything we just pushed so its cleaned up
+    pop si
+    pop di
+    pop es
+    pop ds
+    popf
 
     ret
 
