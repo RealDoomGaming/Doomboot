@@ -13,7 +13,7 @@ start:
 
     ;; enabeling the a 20 line
     ;; before we do that we need to test if the bios has already enabled it
-    jmp check_a20
+    jmp a20
 
 ;; when checking if a20 is on we can follow a specific plan:
 ;; checking if it is on -> if yes continue 
@@ -25,6 +25,10 @@ start:
 ;; and then if it still isnt on just give up
 a20:
     call check_a20
+    je ;; is enabled
+    call enable_a20_bios
+    ;; we dont need a jump here if it is enabled now because we have that in the enable_a20_bios
+
 
 check_a20:
     ;; we need to push some essential stuff for a20
@@ -74,20 +78,41 @@ check_a20:
     pop ax
     mov byte [es:di], al
 
+    ret
+
 ;; with this we try to enable the a20 via the bios only, no memory needed
 enable_a20_bios:
     mov ax, 0x2403  ;; we try to query the a20 support gate
     int 0x15        ;; and then actually call the bios
-    jc a20_nt       ;; if it is not supported we jump to a20 not supported (jc = jump if carry, so if Cf is set jump)
+    jc a20_nt       ;; if it is not supported by the bios we jump to a20 not supported (jc = jump if carry, so if Cf is set jump)
 
     test ah, ah     ;; check if ah is zero and we try to zero it so if ah != 0 then we know a20 is not supported
-    jnz a20_nt
+    jnz a20_nt      ;; if int 15 isnt supported  we jump to a20_nt again
+
+    ;; then if we know the bios supports int 15 we check the gates status via the bios
+    mov ax, 0x2402  ;; asks the bios what the current status is
+    int 0x15        ;; call the bios
+    jc a20_failed   ;; then if it fails to get it we return again just like we did when it wasnt supported
+
+    test ah, ah     ;; we do the same compare as before again
+    jnz a20_failed  ;; we just check for an error again like we did before
+    
+    test al, al     ;; then via check if its now on
+    jnz             ;; if it worked we jump, we could just return and test it like before but this is just simpler and does the same thing
 
     ret
+
+enable_a20_keyboard:
+    
 
 ;; just calls a return so we jump back to the original a20
 a20_ns:
     ret
+
+;; just calls a return so we jump back to the original a20
+a20_failed:
+    ret
+
 /*
     ;; then after comparing and cleaning up we can finally interpret the result
     ;; if before we found out that a20 was disabled we need to enable it
