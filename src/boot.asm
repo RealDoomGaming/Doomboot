@@ -11,6 +11,9 @@ start:
     ;; then switch to protected mode so 32 bit
     ;; and then we need to load the kernels main function
 
+    ;; clear input flag -> disables hardware interrupts
+    cli
+
     ;; enabeling the a 20 line
     ;; before we do that we need to test if the bios has already enabled it
     jmp a20
@@ -37,9 +40,6 @@ check_a20:
     push es
     push di
     push si
-
-    ;; clear input flag -> disables hardware interrupts
-    cli
 
     ;; we need to set es and ds to those specific values because we need two segments which are exactly 1MB apart
     xor ax, ax ;; sets ax to 0
