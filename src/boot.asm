@@ -29,11 +29,21 @@ start:
 a20:
     call check_a20
     je ;; is enabled
+
     call enable_a20_bios
     ;; we dont need a jump here if it is enabled now because we have that in the enable_a20_bios
+
     call enable_a20_keyboard ;; try enabeling a20 with the keyboard controller
     call check_a20           ;; check it again
     je ;; is enabled now
+
+    call enable_a20_fast    ;; try enabeling the a20 gate with the fast a20 method
+    call check_a20          ;; checking if it worked
+    je ;; is enabled now
+
+    ;; if it still didnt work we just give up
+    jmp a20_completely_failed
+
 
 check_a20:
     ;; we need to push some essential stuff for a20
@@ -142,6 +152,16 @@ enable_a20_keyboard:
 
     ;; then lastly we have to do some cleanup
     call a20wait
+    ret
+
+enable_a20_fast:
+    in al, 0x92     ;; firstly we read the first byte from the System control port a on 0x92
+    test al, 2      ;; then we check if bit 1 (value 2) is already set
+    jnz             ;; if it is set we know a20 is enabled
+    or al, 2        ;; if its not set then we have to set it with the same way as before 
+    and al, 0xFE    ;; we need to do this because we want the bit 0 to always be 0 else **bad** things will happen
+    out 0x92, al    ;; now write it back onto the controller
+
     ret
 
 ;; this just waits until the input buffer is clear
