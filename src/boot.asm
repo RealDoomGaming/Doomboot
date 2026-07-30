@@ -107,6 +107,15 @@ enable_a20_keyboard:
     mov al, 0xAD    ;; then with 0xAD we disable the keyboard
     out 0x64, al    ;; 0x64 is the controllers command port so we send it to the controller itself and not the actual keyboard
 
+    ;; then after we disabled the keyboard we ask the controller to output its current output-port byte
+    ;; we will use the read stuff later
+    call a20wait    ;; wait again like before
+    mov al, 0xD0    ;; then move the command 0xD0 (read controller output port) to the controller
+    out 0x64, al    ;; then we actually read it
+    ;; we read this because one bit of the stuff we get back from the controller controls the a20 gate
+    ;; but we have to be carefull because it controlls really really important stuff
+
+
 ;; this just waits until the input buffer is clear
 a20wait:
     in al, 0x64     ;; we read from the port 0x64 which gives us the controllers status bytes
