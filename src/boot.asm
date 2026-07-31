@@ -47,10 +47,17 @@ a20:
 a20_enabled:
     mov si, a20_success_msg
     call print_string
-    jmp halt 
 
     ;; after we have enabled a 20 we have to load a gdt (global descriptor table) in order to
     ;; jump into protected mode (32bit) and then later long mode (64 bit)
+    ;; we firstly load our gdt descriptor, we only need to do this once!!
+    lgdt [gdt_desc]
+
+    mov eax, cr0    ;; cr0 is a internal register of the cpu which is for its state and configuration, and we copy its value to the eax register
+    or eax, 1       ;; this sets bit 0 to 1, bit 0 of cr0 is the protection enabled bit so if we set it to 1 we enable protective mode
+    mov cr0, eax    ;; then we just move the new bit sequence back into the cr0 register
+
+    jmp CODE32:protected_mode_entry     ;; here we performe a far jump and force the cpu to throw away whatever it wanted to do and continue in protected mode
 
 ;; here we will define our gdt, in our gdt we want to five descriptors
 ;; 1. null descriptor -> this one is required by the cpu I think, but either way we need it
@@ -146,7 +153,7 @@ gdt_end:
 
 ;; after defining all the gdt segments we need to make a gdt descriptor
 gdt_desc:
-    db gdt_end - gdt_start  ;; here we just calculate the size of the global descriptor table
+    dw gdt_end - gdt_start - 1  ;; here we just calculate the size of the global descriptor table
     dq gdt_start            ;; and this is where the table starts
 
 
@@ -330,6 +337,10 @@ halt:
 a20_failed_err_msg db "Couldnt enable the a20 gate.", 0
 ;; success message for when we successfully activated the a20 gate
 a20_success_msg db "Successfully enabled the a20 gate", 0
+
+[bits 32] 
+protected_mode_entry:
+    jmp halt
 
 ;; ($-$$) is the current size of our programm
 times 510-($-$$) db 0 ;; tells nasm to pad everything of our 512 bytes except the last 2, bootloader needs to be 512 bytes
