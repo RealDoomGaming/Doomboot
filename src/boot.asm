@@ -330,9 +330,6 @@ a20_completely_failed:
     call print_string
     jmp halt
 
-halt:
-    jmp halt;; jumps back to halt again and again -> infinite loop, prevents from going off into memory and executing junk
-
 ;; error message for when we completely failed to enable the a20 gate
 a20_failed_err_msg db "Couldnt enable the a20 gate.", 0
 ;; success message for when we successfully activated the a20 gate
