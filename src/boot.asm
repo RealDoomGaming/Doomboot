@@ -96,6 +96,22 @@ gdt_code_32bit:
     ;; the only thing remaining are the last 8 bit responsible for the base address, and we still set them to 0
     db 0 
 
+;; now we can do the same thing with our 32 bit data segment
+;; it is basically the same as the one from the code segement with only some tweaks
+gdt_data_32bit:
+    dw 0xFFFF      
+    dw 0x00 
+
+    db 0x00
+
+    ;; the only bits which are different are:
+    ;; the only thing different here is the 3rd bit which is the executable bit, and we set it to 0 because this is the data segment and therefor is only storage
+    db 10010010b
+
+    ;; this stays the same
+    db 11001111b
+
+    db 0
 
 check_a20:
     ;; we need to push some essential stuff for a20
