@@ -60,7 +60,7 @@ a20_enabled:
 ;; 5. 64 bit data segment
 ;; for more info you can refer to this: https://web.archive.org/web/20190424213806/http://www.osdever.net/tutorials/view/the-world-of-protected-mode
 ;; it helped me a lot and also explains it really well
-gdt:
+gdt_start:
 
 gdt_null:
     dq 0
@@ -143,6 +143,11 @@ gdt_data_64bit:
 
 ;; here we set the end of our gdt segments because later we need the difference between the end and beginning to calucluate something
 gdt_end:
+
+;; after defining all the gdt segments we need to make a gdt descriptor
+gdt_desc:
+    db gdt_end - gdt_start  ;; here we just calculate the size of the global descriptor table
+    dw gdt_start            ;; and this is where the table starts
 
 check_a20:
     ;; we need to push some essential stuff for a20
