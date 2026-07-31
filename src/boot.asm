@@ -340,6 +340,8 @@ a20_success_msg db "Successfully enabled the a20 gate", 0
 
 [bits 32] 
 protected_mode_entry:
+    ;; maybe print a success message here later
+
     jmp halt
 
 ;; ($-$$) is the current size of our programm
