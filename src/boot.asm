@@ -355,7 +355,7 @@ pm_print_setup:
 ;; we need a new print since we are now in 32 bit mode and cant call bios anymore
 .pm_print_string:
     mov al, [ebx]       ;; we move the character from ebx to the al register
-    mov ah, 0x0f        ;; 0x0f stands for black on white when we print something
+    mov ah, 0x0F        ;; 0x0F stands for black on white when we print something
 
     cmp al, 0           ;; check if we are at the end of the string via the null terminator
     je .pm_end_print     ;; if it has ended we jump to a function which returns to where pm_print_string was called
