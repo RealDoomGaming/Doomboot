@@ -336,13 +336,44 @@ halt:
 ;; error message for when we completely failed to enable the a20 gate
 a20_failed_err_msg db "Couldnt enable the a20 gate.", 0
 ;; success message for when we successfully activated the a20 gate
-a20_success_msg db "Successfully enabled the a20 gate", 0
+a20_success_msg db "Successfully enabled the a20 gate.", 0
 
 [bits 32] 
 protected_mode_entry:
-    ;; maybe print a success message here later
+    ;; print a success message here later
+    mov ebx, pm_success_msg     ;; we have to move it into there
 
-    jmp halt
+    call pm_print_setup          ;; doing the important setup beforehand
+
+    jmp pm_halt
+
+;; before we can print stuff we need to set where the video memory stuff is located
+pm_print_setup:
+    pusha
+    mov edx, 0xB8000   ;; the video memory is at 0xB8000
+
+;; we need a new print since we are now in 32 bit mode and cant call bios anymore
+.pm_print_string:
+    mov al, [ebx]       ;; we move the character from ebx to the al register
+    mov ah, 0x0f        ;; 0x0f stands for black on white when we print something
+
+    cmp al, 0           ;; check if we are at the end of the string via the null terminator
+    je .pm_end_print     ;; if it has ended we jump to a function which returns to where pm_print_string was called
+
+    mov [edx], ax       ;; we store the character and attribute in the video memory which basically "prints" it
+    add ebx, 1          ;; we go to the next character in our string
+    add edx, 2          ;; we go to the next video memory position
+
+    jmp .pm_print_string ;; and then we have our loop
+
+.pm_end_print:
+    popa
+    ret
+
+pm_success_msg db "Successfully entered protected mode.", 0 ;; our success message
+
+pm_halt:
+    jmp pm_halt
 
 ;; ($-$$) is the current size of our programm
 times 510-($-$$) db 0 ;; tells nasm to pad everything of our 512 bytes except the last 2, bootloader needs to be 512 bytes
