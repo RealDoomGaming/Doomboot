@@ -47,7 +47,55 @@ a20:
 a20_enabled:
     mov si, a20_success_msg
     call print_string
-    jmp halt
+    jmp halt 
+
+    ;; after we have enabled a 20 we have to load a gdt (global descriptor table) in order to
+    ;; jump into protected mode (32bit) and then later long mode (64 bit)
+
+;; here we will define our gdt, in our gdt we want to five descriptors
+;; 1. null descriptor -> this one is required by the cpu I think, but either way we need it
+;; 2. 32 bit code segment   
+;; 3. 32 bit data segment
+;; 4. 64 bit code segment
+;; 5. 64 bit data segment
+;; for more info you can refer to this: https://web.archive.org/web/20190424213806/http://www.osdever.net/tutorials/view/the-world-of-protected-mode
+;; it helped me a lot and also explains it really well
+gdt:
+
+gdt_null:
+    dq 0
+
+gdt_code_32bit:
+    ;; this is our first double word segment in the gdt
+    dw 0xFFFF       ;; first 16 bits are set to the max amount so 4GB
+    dw 0x00         ;; and the start of our base memory will be set to 0
+
+    ;; and then our 2nd double word segment in the gdt
+    db 0x00         ;; the first 8 bit of our 2nd double word are for the base address so we set that to 0 too
+
+    ;; for the next 8 bit, the first 4 are type bits
+    ;; the 8th bit is an access flag for the cpu for which we dont have any use right now so we set it to 0
+    ;; the 9th bit sets if the segment should be readable, we want that so we set it
+    ;; the 10th bit is a conforming bit which determins if a lesser priveleged code segement can call this one and in a realistic case we dont really want that
+    ;; and 11th bit spcifies if this gdt segment is a code (1) or a data (0) segment
+    ;; then we continue with the 12th bit is set if the segment is either a code or a data segment
+    ;; the 13th and 14th bits are for the privelege level, ranging from 0 to 3 where 3 is the least priveleged, since this gdt segment is part of our OS we set both bits to 0 
+    ;; and the last bit is the present flag, we also set this bit 
+    ;; and we finally get:
+    db 10011010b        ;; the b stands for bit and we read it from back to front
+    
+    ;; and now we have the final 16 bits to set
+    ;; bits 16 to 19 are a limit, so we set that to the highest (0Fh or in binary 1111)
+    ;; the 20th bit is for is a flag which which is available to programmers, so we can set it to whatever we want (we ignore it for now)
+    ;; the 21st bit is reserved for something to do with intel or something so it has to be 0
+    ;; the next bit is the size bit, it tells the cpu that we have 32 bit code and not 16 bit code, so we set it 
+    ;; the 23rd bit multiplies the limit by 4kB if it is set and we want that
+    ;; so finally we get:
+    db 11001111b
+
+    ;; the only thing remaining are the last 8 bit responsible for the base address, and we still set them to 0
+    db 0 
+
 
 check_a20:
     ;; we need to push some essential stuff for a20
