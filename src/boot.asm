@@ -330,13 +330,33 @@ a20_completely_failed:
     call print_string
     jmp halt
 
+halt:
+    jmp halt
+
 ;; error message for when we completely failed to enable the a20 gate
 a20_failed_err_msg db "Couldnt enable the a20 gate.", 0
 ;; success message for when we successfully activated the a20 gate
 a20_success_msg db "Successfully enabled the a20 gate.", 0
 
 [bits 32] 
+;; I think these are relatively self explanetory
+VIDEO equ 0xB8000
+WHITE_ON_BLACK equ 0x0F
+SCREEN_WIDTH equ 80
+SCREEN_HEIGHT equ 25
+
 protected_mode_entry:
+    ;; first thing we do is we have to setup the segment registers
+    mov ax, 0x10        ;; why 0x10 here -> it was the data segment selector from our gdt earlier
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    mov esp, 0x90000     ; and here we setup the stack
+
+    call clear_screen
+
     ;; print a success message here later
     mov ebx, pm_success_msg     ;; we have to move it into there
 
@@ -344,15 +364,30 @@ protected_mode_entry:
 
     jmp pm_halt
 
+clear_screen:
+    pusha
+    mov edi, VIDEO      ;; move the value from our video constant into the edi register
+    mov ecx, SCREEN_HEIGHT * SCREEN_WIDTH ;; same with the screen height and width -> those multiplied represent all characters which can fit on the screen
+    mov ax, 0x0F20                        ;; 0x0F stands for attribute and we can combine that with a space char so 0x20
+
+;; then we fall into our clear loop label
+.clear_loop:
+    mov [edi], ax
+    add edi, 2
+    loop .clear_loop
+
+    popa
+    ret
+
 ;; before we can print stuff we need to set where the video memory stuff is located
 pm_print_setup:
     pusha
-    mov edx, 0xB8000   ;; the video memory is at 0xB8000
+    mov edx, VIDEO   ;; the video memory is at 0xB8000
 
 ;; we need a new print since we are now in 32 bit mode and cant call bios anymore
 .pm_print_string:
-    mov al, [ebx]       ;; we move the character from ebx to the al register
-    mov ah, 0x0F        ;; 0x0F stands for black on white when we print something
+    mov al, [ebx]                 ;; we move the character from ebx to the al register
+    mov ah, WHITE_ON_BLACK        ;; 0x0F stands for black on white when we print something
 
     cmp al, 0           ;; check if we are at the end of the string via the null terminator
     je .pm_end_print     ;; if it has ended we jump to a function which returns to where pm_print_string was called
