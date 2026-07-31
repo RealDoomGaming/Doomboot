@@ -150,6 +150,12 @@ gdt_desc:
     dq gdt_start            ;; and this is where the table starts
 
 
+;; we can also define some handy selector contants which we can use later when switiching modes
+CODE32 equ gdt_code_32bit-gdt_start     ;; tells the variable where our gdt code segment for the 32bit protected mode starts
+DATA32 equ gdt_data_32bit-gdt_start     ;; same as before
+CODE64 equ gdt_code_64bit-gdt_start     ;; yeah I think you get it
+DATA64 equ gdt_data_64bit-gdt_start     ;; yep
+
 
 check_a20:
     ;; we need to push some essential stuff for a20
