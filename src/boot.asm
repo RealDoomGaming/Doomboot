@@ -147,7 +147,9 @@ gdt_end:
 ;; after defining all the gdt segments we need to make a gdt descriptor
 gdt_desc:
     db gdt_end - gdt_start  ;; here we just calculate the size of the global descriptor table
-    dw gdt_start            ;; and this is where the table starts
+    dq gdt_start            ;; and this is where the table starts
+
+
 
 check_a20:
     ;; we need to push some essential stuff for a20
