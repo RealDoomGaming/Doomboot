@@ -113,6 +113,37 @@ gdt_data_32bit:
 
     db 0
 
+;; this is the same as the 32 bit one but its for 64 bit, some things will change but not a lot
+gdt_code_64bit:
+    dw 0x0000       ;; this si the first thing which changes, when we were in protected mode before the cpu enforced a 4GB limit but this time when we are in long mode the cpu completely ingores any limit
+    dw 0x00
+
+    db 0x00
+
+    db 10011010b
+
+    ;; the only thing which changes is that we set the long mode bit and unset the size bit bit (before: 11001111b)
+    db 10101111b
+
+;; same with this one, it only changed a bit
+gdt_data_64bit:
+    dw 0x0000       ;; the limit gets unset again      
+    dw 0x00 
+
+    db 0x00
+
+    db 10010010b    ;; stays the same
+
+    db 00000000b    ;; gets completely unset because there is nothing meaningfull to set here with the 64 bit data
+    ;; the granularity doesnt matter since we have no limit
+    ;; the size bit doesnt matter because for data segments its not importent
+    ;; the long mode bit doesnt matter since it gets only checked if the segment is a code segment
+
+    db 0
+
+;; here we set the end of our gdt segments because later we need the difference between the end and beginning to calucluate something
+gdt_end:
+
 check_a20:
     ;; we need to push some essential stuff for a20
     pushf
