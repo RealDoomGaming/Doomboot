@@ -132,6 +132,8 @@ gdt_code_64bit:
     ;; the only thing which changes is that we set the long mode bit and unset the size bit bit (before: 11001111b)
     db 10101111b
 
+    db 0
+
 ;; same with this one, it only changed a bit
 gdt_data_64bit:
     dw 0x0000       ;; the limit gets unset again      
@@ -154,7 +156,7 @@ gdt_end:
 ;; after defining all the gdt segments we need to make a gdt descriptor
 gdt_desc:
     dw gdt_end - gdt_start - 1  ;; here we just calculate the size of the global descriptor table
-    dq gdt_start            ;; and this is where the table starts
+    dd gdt_start            ;; and this is where the table starts
 
 
 ;; we can also define some handy selector contants which we can use later when switiching modes
