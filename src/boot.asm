@@ -14,6 +14,11 @@ start:
     ;; clear input flag -> disables hardware interrupts
     cli
 
+    ;; we have to set up a stack else the bootloader might not even work
+    xor ax, ax
+    mov ss, ax
+    mov ss, 0x7c00  ;; why we set it to 0x7c00, because the stack grows downward into free memory
+
     ;; enabeling the a 20 line
     ;; before we do that we need to test if the bios has already enabled it
     jmp a20
