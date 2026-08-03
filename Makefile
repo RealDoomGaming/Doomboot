@@ -9,6 +9,7 @@ $(BIN): $(SRC)
 	$(ASM) -f bin $(SRC) -o $(BIN)
 
 clean:
-	rm -rf $(OBJ) $(BIN)
+	mkdir -p ./build
+	rm -rf $(BIN)
 
-.PHONY: all run clean
+.PHONY: all clean
