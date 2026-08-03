@@ -19,7 +19,14 @@ dap:
     db 0x10
     ;; the second byte is reserved by the bios so we just put 0 here
     db 0
-    ;; the next 2 bytes are for 
+    ;; the next 2 bytes are for how many 512 byte sectors are gonna get loaded
+    dw STAGE2_SECTORS
+    ;; then the next 2 are for the offset where to put our memory
+    dw STAGE2_OFFSET
+    ;; then the next 2 bytes are for the segment, this will be combined with the offset to form the actual address of the memory
+    dw STAGE2_SEGMENT
+    ;; and the last 8 bytes are for which number the file we will load has on the disk
+    dq STAGE2_LBA
 
 start:
     ;; if we want to boot into a kernel later we will need to do some stuff
@@ -35,7 +42,11 @@ start:
     ;; we have to set up a stack else the bootloader might not even work
     xor ax, ax
     mov ss, ax
+    mov ds, ax
+    mov es, ax
     mov sp, 0x7c00  ;; why we set it to 0x7c00, because the stack grows downward into free memory
+
+    mov [boot_drive], dl   ;; here we save dl (we need it for the disk) because only at the start we know its right and not some garbage 
 
     ;; enabeling the a 20 line
     ;; before we do that we need to test if the bios has already enabled it
@@ -74,6 +85,15 @@ a20_enabled:
     call print_string
 
     ;; instead of going into protected mode here we go to our second stage bootloader
+    ;; before we do anything else we have to actually "load" the sectors starting at 0x8000 into the address
+    mov si, dap             ;; we load our dap into si where th bios expects it to be when we do the bios call
+    mov ah, 0x42            ;; we have to put 0x42 into ah since then the bios call with 0x13 can recognise this correctly (0x42 means that we want to extend using the dap)
+    mov dl, [boot_drive]    ;; this tells the bios which physicall drive to read from
+    int 0x13                ;; and then after all that we finally have to call the bios interrupt 0x13 
+    jc disk_error           ;; if it didnt work we jump into the error where we will print something and have an infinite loop
+
+    ;; and then finally we can jump
+    jmp STAGE2_SEGMENT:STAGE2_OFFSET
 
 check_a20:
     ;; we need to push some essential stuff for a20
@@ -259,9 +279,17 @@ a20_completely_failed:
     call print_string
     jmp halt
 
+disk_error:
+    mov si, disk_error_msg
+    cld
+    call print_string
+    jmp halt
+
 halt:
     jmp halt
 
+;; error message for when we fail to read the disk
+disk_error_msg db "Couldnt read the disk.", 0
 ;; error message for when we completely failed to enable the a20 gate
 a20_failed_err_msg db "Couldnt enable the a20 gate.", 0
 ;; success message for when we successfully activated the a20 gate
