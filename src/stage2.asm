@@ -3,3 +3,191 @@
 
 ;; we start here with the second stage of our bootloader
 start2:
+    ;; after we have enabled a 20 in our stage 1 we have to load a gdt (global descriptor table) in order to
+    ;; jump into protected mode (32bit) and then later long mode (64 bit)
+    ;; we firstly load our gdt descriptor, we only need to do this once!!
+    lgdt [gdt_desc]
+
+    mov eax, cr0    ;; cr0 is a internal register of the cpu which is for its state and configuration, and we copy its value to the eax register
+    or eax, 1       ;; this sets bit 0 to 1, bit 0 of cr0 is the protection enabled bit so if we set it to 1 we enable protective mode
+    mov cr0, eax    ;; then we just move the new bit sequence back into the cr0 register
+
+    jmp CODE32:protected_mode_entry     ;; here we performe a far jump and force the cpu to throw away whatever it wanted to do and continue in protected mode
+
+
+
+;; here we will define our gdt, in our gdt we want to five descriptors
+;; 1. null descriptor -> this one is required by the cpu I think, but either way we need it
+;; 2. 32 bit code segment   
+;; 3. 32 bit data segment
+;; 4. 64 bit code segment
+;; 5. 64 bit data segment
+;; for more info you can refer to this: https://web.archive.org/web/20190424213806/http://www.osdever.net/tutorials/view/the-world-of-protected-mode
+;; it helped me a lot and also explains it really well
+gdt_start:
+
+gdt_null:
+    dq 0
+
+gdt_code_32bit:
+    ;; this is our first double word segment in the gdt
+    dw 0xFFFF       ;; first 16 bits are set to the max amount so 4GB
+    dw 0x00         ;; and the start of our base memory will be set to 0
+
+    ;; and then our 2nd double word segment in the gdt
+    db 0x00         ;; the first 8 bit of our 2nd double word are for the base address so we set that to 0 too
+
+    ;; for the next 8 bit, the first 4 are type bits
+    ;; the 8th bit is an access flag for the cpu for which we dont have any use right now so we set it to 0
+    ;; the 9th bit sets if the segment should be readable, we want that so we set it
+    ;; the 10th bit is a conforming bit which determins if a lesser priveleged code segement can call this one and in a realistic case we dont really want that
+    ;; and 11th bit spcifies if this gdt segment is a code (1) or a data (0) segment
+    ;; then we continue with the 12th bit is set if the segment is either a code or a data segment
+    ;; the 13th and 14th bits are for the privelege level, ranging from 0 to 3 where 3 is the least priveleged, since this gdt segment is part of our OS we set both bits to 0 
+    ;; and the last bit is the present flag, we also set this bit 
+    ;; and we finally get:
+    db 10011010b        ;; the b stands for bit and we read it from back to front
+    
+    ;; and now we have the final 16 bits to set
+    ;; bits 16 to 19 are a limit, so we set that to the highest (0Fh or in binary 1111)
+    ;; the 20th bit is for is a flag which which is available to programmers, so we can set it to whatever we want (we ignore it for now)
+    ;; the 21st bit is reserved for something to do with intel or something so it has to be 0
+    ;; the next bit is the size bit, it tells the cpu that we have 32 bit code and not 16 bit code, so we set it 
+    ;; the 23rd bit multiplies the limit by 4kB if it is set and we want that
+    ;; so finally we get:
+    db 11001111b
+
+    ;; the only thing remaining are the last 8 bit responsible for the base address, and we still set them to 0
+    db 0 
+
+;; now we can do the same thing with our 32 bit data segment
+;; it is basically the same as the one from the code segement with only some tweaks
+gdt_data_32bit:
+    dw 0xFFFF      
+    dw 0x00 
+
+    db 0x00
+
+    ;; the only bits which are different are:
+    ;; the only thing different here is the 3rd bit which is the executable bit, and we set it to 0 because this is the data segment and therefor is only storage
+    db 10010010b
+
+    ;; this stays the same
+    db 11001111b
+
+    db 0
+
+;; this is the same as the 32 bit one but its for 64 bit, some things will change but not a lot
+gdt_code_64bit:
+    dw 0x0000       ;; this si the first thing which changes, when we were in protected mode before the cpu enforced a 4GB limit but this time when we are in long mode the cpu completely ingores any limit
+    dw 0x00
+
+    db 0x00
+
+    db 10011010b
+
+    ;; the only thing which changes is that we set the long mode bit and unset the size bit bit (before: 11001111b)
+    db 10101111b
+
+    db 0
+
+;; same with this one, it only changed a bit
+gdt_data_64bit:
+    dw 0x0000       ;; the limit gets unset again      
+    dw 0x00 
+
+    db 0x00
+
+    db 10010010b    ;; stays the same
+
+    db 00000000b    ;; gets completely unset because there is nothing meaningfull to set here with the 64 bit data
+    ;; the granularity doesnt matter since we have no limit
+    ;; the size bit doesnt matter because for data segments its not importent
+    ;; the long mode bit doesnt matter since it gets only checked if the segment is a code segment
+
+    db 0
+
+;; here we set the end of our gdt segments because later we need the difference between the end and beginning to calucluate something
+gdt_end:
+
+;; after defining all the gdt segments we need to make a gdt descriptor
+gdt_desc:
+    dw gdt_end - gdt_start - 1  ;; here we just calculate the size of the global descriptor table
+    dd gdt_start            ;; and this is where the table starts
+
+
+;; we can also define some handy selector contants which we can use later when switiching modes
+CODE32 equ gdt_code_32bit-gdt_start     ;; tells the variable where our gdt code segment for the 32bit protected mode starts
+DATA32 equ gdt_data_32bit-gdt_start     ;; same as before
+CODE64 equ gdt_code_64bit-gdt_start     ;; yeah I think you get it
+DATA64 equ gdt_data_64bit-gdt_start     ;; yep
+
+
+[bits 32] 
+;; I think these are relatively self explanetory
+VIDEO equ 0xB8000
+WHITE_ON_BLACK equ 0x0F
+SCREEN_WIDTH equ 80
+SCREEN_HEIGHT equ 25
+
+protected_mode_entry:
+    ;; first thing we do is we have to setup the segment registers
+    mov ax, 0x10        ;; why 0x10 here -> it was the data segment selector from our gdt earlier
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    mov esp, 0x90000     ; and here we setup the stack
+
+    call clear_screen
+
+    ;; print a success message here later
+    mov ebx, pm_success_msg     ;; we have to move it into there
+
+    call pm_print_setup          ;; doing the important setup beforehand
+
+    jmp pm_halt
+
+clear_screen:
+    pusha
+    mov edi, VIDEO      ;; move the value from our video constant into the edi register
+    mov ecx, SCREEN_HEIGHT * SCREEN_WIDTH ;; same with the screen height and width -> those multiplied represent all characters which can fit on the screen
+    mov ax, 0x0F20                        ;; 0x0F stands for attribute and we can combine that with a space char so 0x20
+
+;; then we fall into our clear loop label
+.clear_loop:
+    mov [edi], ax
+    add edi, 2
+    loop .clear_loop
+
+    popa
+    ret
+
+;; before we can print stuff we need to set where the video memory stuff is located
+pm_print_setup:
+    pusha
+    mov edx, VIDEO   ;; the video memory is at 0xB8000
+
+;; we need a new print since we are now in 32 bit mode and cant call bios anymore
+.pm_print_string:
+    mov al, [ebx]                 ;; we move the character from ebx to the al register
+    mov ah, WHITE_ON_BLACK        ;; 0x0F stands for black on white when we print something
+
+    cmp al, 0           ;; check if we are at the end of the string via the null terminator
+    je .pm_end_print     ;; if it has ended we jump to a function which returns to where pm_print_string was called
+
+    mov [edx], ax       ;; we store the character and attribute in the video memory which basically "prints" it
+    add ebx, 1          ;; we go to the next character in our string
+    add edx, 2          ;; we go to the next video memory position
+
+    jmp .pm_print_string ;; and then we have our loop
+
+.pm_end_print:
+    popa
+    ret
+
+pm_success_msg db "Successfully entered protected mode.", 0 ;; our success message
+
+pm_halt:
+    jmp pm_halt
