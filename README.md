@@ -9,6 +9,7 @@ This is just a learning experience so I really have no idea where this project m
 - [x] A20 line enabling 
 - [x] GDT setup
 - [x] Switch to 32-bit protected mode
+- [ ] Switch into a second stage bootloader since our nearly has 512 byte
 - [ ] Set up Paging
 - [ ] Switch to 64-bit long mode
 - [ ] Jump into a custom kernel -> Maybe
