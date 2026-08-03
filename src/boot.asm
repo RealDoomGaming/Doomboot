@@ -251,7 +251,7 @@ enable_a20_bios:
     jnz a20_failed  ;; we just check for an error again like we did before
 
     test al, al     ;; then via check if its now on
-    jnz a20_enabled ;; if it worked we jump, we could just return and test it like before but this is just simpler and does the same thing
+    jnz a20_enabled_return ;; if it worked we jump, we could just return and test it like before but this is just simpler and does the same thing
 
     ;; if its not on we could try to enable it via the bios
     mov ax, 0x2401  ;; 0x2401 is the flag for turning on the a20 gate
@@ -306,11 +306,14 @@ enable_a20_keyboard:
 enable_a20_fast:
     in al, 0x92     ;; firstly we read the first byte from the System control port a on 0x92
     test al, 2      ;; then we check if bit 1 (value 2) is already set
-    jnz a20_enabled ;; if it is set we know a20 is enabled
+    jnz a20_enabled_return ;; if it is set we know a20 is enabled
     or al, 2        ;; if its not set then we have to set it with the same way as before 
     and al, 0xFE    ;; we need to do this because we want the bit 0 to always be 0 else **bad** things will happen
     out 0x92, al    ;; now write it back onto the controller
 
+    ret
+
+a20_enabled_return:
     ret
 
 ;; this just waits until the input buffer is clear
