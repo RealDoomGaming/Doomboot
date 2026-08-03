@@ -1,15 +1,33 @@
 [org 0x7c00] ;; tells nasm where the code is located in memory
 [bits 16] ;; code runs in 16 bit mode for booting
 
+;; we need this here for our dap later
+STAGE2_SEGMENT  equ 0x0000      ;; this will be combined with the offset later so we can just leave it at 0
+STAGE2_OFFSET   equ 0x8000      ;; where we will load our second stage
+STAGE2_SECTORS  equ 8           ;; this is how many 512 mb sectors to load when we go into the second stage of our bootloader
+STAGE2_LBA      equ 1           ;; this is where on the disk the second stage starts, sector 0 is always the boot sector and since stage 2 of our bootloader was written directly after our bootloader it has to be at sector 0
+
 ;; we need to jmp over the bios thingis
 jmp start 
+
+;; here we define our dap (Disk Address Packet)
+align 4     ;; this we just do because its best practise, I have never seen it explained tho
+dap:
+    ;; we will make our package 16 bytes long
+    ;; the future int 0x13 (triggers the bios disk service) wants one pointer and not a pile of registers so we need this
+    ;; the first byte is the size of this package
+    db 0x10
+    ;; the second byte is reserved by the bios so we just put 0 here
+    db 0
+    ;; the next 2 bytes are for 
 
 start:
     ;; if we want to boot into a kernel later we will need to do some stuff
     ;; first we need to enable the a20 line in order to access memory above 1MB
-    ;; then we need to load a gdt (global descriptor table)
-    ;; then switch to protected mode so 32 bit
-    ;; and then we need to load the kernels main function
+    ;; then we load into the second stage of the boothloader where we 
+    ;; load a gdt (global descriptor table)
+    ;; go into 32bit protected mode
+    ;; and then go into 64 bit mode before loading a kernel
 
     ;; clear input flag -> disables hardware interrupts
     cli
