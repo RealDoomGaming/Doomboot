@@ -21,7 +21,8 @@ start:
 
     ;; enabeling the a 20 line
     ;; before we do that we need to test if the bios has already enabled it
-    jmp a20
+    ;; jmp a20
+    ;; we removes this jmp since we fall through to the a20 label anyways
 
 ;; when checking if a20 is on we can follow a specific plan:
 ;; checking if it is on -> if yes continue 
