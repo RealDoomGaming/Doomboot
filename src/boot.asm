@@ -59,6 +59,69 @@ a20_enabled:
 
     jmp CODE32:protected_mode_entry     ;; here we performe a far jump and force the cpu to throw away whatever it wanted to do and continue in protected mode
 
+
+check_a20:
+    ;; we need to push some essential stuff for a20
+    pushf
+    push ds
+    push es
+    push di
+    push si
+
+    ;; we need to set es and ds to those specific values because we need two segments which are exactly 1MB apart
+    xor ax, ax ;; sets ax to 0
+    mov es, ax ;; es will also be set to 0
+
+    not ax     ;; this sets ax to 0xFFFF
+    mov ds, ax ;; sets ds to 0xFFFF
+
+    ;; we need these to later compute where the physicall addresses point to
+    mov di, 0x0500
+    mov si, 0x0510
+
+    ;; here we just save the bytes onto the stack at their respective memory addresses
+    mov al, byte [es:di]
+    push ax
+
+    mov al, byte [ds:si]
+    push ax
+
+    ;; we need this so we know if a20 is enabled
+    ;; firstly we set the low address to 0x00 and then the high address to 0xFF
+    ;; after that we re-read es:di and see if it is 0xFF, it will be 0xFF if a20 is disabled (because it wraps around)
+    ;; and else if its not 0xFF then a20 is anabled because it is still 0x00 (didnt wrap around, has more then 1MB)
+    ;; we also use byte because it gives us back the address of [segment:offset] and we need exactly 1 byte from that address
+    mov byte [es:di], 0x00
+    mov byte [ds:si], 0xFF
+
+    ;; we have to compare it now because if we wait until later then popf will remove our compared value
+    cmp byte [es:di], 0xFF
+    mov bx, 0
+    je .done
+    mov bx, 1
+
+.done:
+    ;; then after we are done with the test we pop ax off again 
+    ;; and we also restore the original byte of ds:si here because before we read it and pushed it before using it
+    ;; its just cleanup basically :D
+    pop ax
+    mov byte [ds:si], al
+
+    pop ax
+    mov byte [es:di], al
+
+    ;; before we return from this we need to pop everything we just pushed so its cleaned up
+    pop si
+    pop di
+    pop es
+    pop ds
+    popf
+
+    cmp bx, 0
+
+    ret
+
+
 ;; here we will define our gdt, in our gdt we want to five descriptors
 ;; 1. null descriptor -> this one is required by the cpu I think, but either way we need it
 ;; 2. 32 bit code segment   
@@ -164,61 +227,6 @@ CODE32 equ gdt_code_32bit-gdt_start     ;; tells the variable where our gdt code
 DATA32 equ gdt_data_32bit-gdt_start     ;; same as before
 CODE64 equ gdt_code_64bit-gdt_start     ;; yeah I think you get it
 DATA64 equ gdt_data_64bit-gdt_start     ;; yep
-
-
-check_a20:
-    ;; we need to push some essential stuff for a20
-    pushf
-    push ds
-    push es
-    push di
-    push si
-
-    ;; we need to set es and ds to those specific values because we need two segments which are exactly 1MB apart
-    xor ax, ax ;; sets ax to 0
-    mov es, ax ;; es will also be set to 0
-
-    not ax     ;; this sets ax to 0xFFFF
-    mov ds, ax ;; sets ds to 0xFFFF
-
-    ;; we need these to later compute where the physicall addresses point to
-    mov di, 0x0500
-    mov si, 0x0510
-
-    ;; here we just save the bytes onto the stack at their respective memory addresses
-    mov al, byte [es:di]
-    push ax
-
-    mov al, byte [ds:si]
-    push ax
-
-    ;; we need this so we know if a20 is enabled
-    ;; firstly we set the low address to 0x00 and then the high address to 0xFF
-    ;; after that we re-read es:di and see if it is 0xFF, it will be 0xFF if a20 is disabled (because it wraps around)
-    ;; and else if its not 0xFF then a20 is anabled because it is still 0x00 (didnt wrap around, has more then 1MB)
-    ;; we also use byte because it gives us back the address of [segment:offset] and we need exactly 1 byte from that address
-    mov byte [es:di], 0x00
-    mov byte [ds:si], 0xFF
-
-    cmp byte [es:di], 0xFF
-
-    ;; then after we are done with the test we pop ax off again 
-    ;; and we also restore the original byte of ds:si here because before we read it and pushed it before using it
-    ;; its just cleanup basically :D
-    pop ax
-    mov byte [ds:si], al
-
-    pop ax
-    mov byte [es:di], al
-
-    ;; before we return from this we need to pop everything we just pushed so its cleaned up
-    pop si
-    pop di
-    pop es
-    pop ds
-    popf
-
-    ret
 
 ;; with this we try to enable the a20 via the bios only, no memory needed
 enable_a20_bios:
