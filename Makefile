@@ -1,5 +1,4 @@
 ASM := nasm
-QEMU := qemu-system-x86-64
 
 SRC := src/boot.asm
 BIN := build/boot.img
