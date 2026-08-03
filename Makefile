@@ -1,6 +1,6 @@
 ASM := nasm
 
-SRC := src/boot.asm
+SRC := src/stage1.asm
 BIN := build/boot.img
 
 all: $(BIN)
