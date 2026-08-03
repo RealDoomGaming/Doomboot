@@ -244,9 +244,17 @@ enable_a20_bios:
 
     test ah, ah     ;; we do the same compare as before again
     jnz a20_failed  ;; we just check for an error again like we did before
-    
+
     test al, al     ;; then via check if its now on
     jnz a20_enabled ;; if it worked we jump, we could just return and test it like before but this is just simpler and does the same thing
+
+    ;; if its not on we could try to enable it via the bios
+    mov ax, 0x2401  ;; 0x2401 is the flag for turning on the a20 gate
+    int 0x15        ;; call the bios
+    jc a20_failed   ;; then if it failed to enable we jump to our error again
+
+    test ah, ah     ;; same as before
+    jnz a20_failed
 
     ret
 
