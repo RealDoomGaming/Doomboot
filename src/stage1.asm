@@ -28,6 +28,8 @@ dap:
     ;; and the last 8 bytes are for which number the file we will load has on the disk
     dq STAGE2_LBA
 
+boot_drive: db 0    
+
 start:
     ;; if we want to boot into a kernel later we will need to do some stuff
     ;; first we need to enable the a20 line in order to access memory above 1MB
