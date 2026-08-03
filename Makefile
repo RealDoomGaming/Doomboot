@@ -1,15 +1,27 @@
 ASM := nasm
+CAT := cat
 
-SRC := src/stage1.asm
-BIN := build/boot.img
+ST1  := src/stage1.asm
+ST2  := src/stage2.asm
+BIN1 := build/stage1.img
+BIN2 := build/stage2.img
+IMG  := build/disk.img
 
-all: $(BIN)
+all: $(IMG)
 
-$(BIN): $(SRC)
-	$(ASM) -f bin $(SRC) -o $(BIN)
+$(BIN1): $(ST1) | build
+	$(ASM) -f bin $(ST1) -o $(BIN1)
+
+$(BIN2): $(ST2) | build
+	$(ASM) -f bin $(ST2) -o $(BIN2)
+
+$(IMG): $(BIN1) $(BIN2)
+	$(CAT) $(BIN1) $(BIN2) > $(IMG)
+
+build:
+	mkdir -p build
 
 clean:
-	mkdir -p ./build
-	rm -rf $(BIN)
+	rm -rf build
 
 .PHONY: all clean
