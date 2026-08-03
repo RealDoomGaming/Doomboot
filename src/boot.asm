@@ -340,6 +340,7 @@ a20_failed:
 
 ;; we use the bios function for this because it is the easiest when we are still in 16 bit mode
 print_string:
+    cld          ;; with this instruction we clear the df which we use at lodsb, we clear it so a forward direction is garunteed and df doesnt grow down into some random memory
     lodsb        ;; this loads the byte at [si] into al and also increments si
     or al, al    ;; here we check if al is equal to 0, so in other words if we have reached the end of a string
     jz .done     ;; if we are finished with the string we just jump to something which returns to where print_string was called
