@@ -191,3 +191,5 @@ pm_success_msg db "Successfully entered protected mode.", 0 ;; our success messa
 
 pm_halt:
     jmp pm_halt
+
+times 4096-($-$$) db 0   ;; then at the end we pad our img up with 0s so this file is actually 4096 bytes (8 sectors) long and the bios can even load the second stage
