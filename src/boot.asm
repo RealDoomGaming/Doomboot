@@ -36,9 +36,9 @@ a20:
     call check_a20         ;; firstly we check if the a20 gate is enabled by default
     jne a20_enabled         ;; is enabled
 
-    call enable_a20_bios
-    jne a20_enabled
-    
+    call enable_a20_bios     ;; we try to enable it with the bios method
+    call check_a20           ;; check if it worked and is now
+    jne a20_enabled           ;; if it is enabled jump
 
     call enable_a20_keyboard ;; try enabeling a20 with the keyboard controller
     call check_a20           ;; check it again
