@@ -290,12 +290,13 @@ disk_error:
 halt:
     jmp halt
 
+;; the 13 and 10 move the cursor where stuff gets printed to a newline
 ;; error message for when we fail to read the disk
-disk_error_msg db "Couldnt read the disk.", 0
+disk_error_msg db "Couldnt read the disk.", 13, 10, 0
 ;; error message for when we completely failed to enable the a20 gate
-a20_failed_err_msg db "Couldnt enable the a20 gate.", 0
+a20_failed_err_msg db "Couldnt enable the a20 gate.", 13, 10, 0
 ;; success message for when we successfully activated the a20 gate
-a20_success_msg db "Successfully enabled the a20 gate.", 0
+a20_success_msg db "Successfully enabled the a20 gate.", 13, 10, 0
 
 pm_halt:
     jmp pm_halt
