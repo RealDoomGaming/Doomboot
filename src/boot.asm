@@ -37,7 +37,8 @@ a20:
     jne a20_enabled         ;; is enabled
 
     call enable_a20_bios
-    ;; we dont need a jump here if it is enabled now because we have that in the enable_a20_bios
+    jne a20_enabled
+    
 
     call enable_a20_keyboard ;; try enabeling a20 with the keyboard controller
     call check_a20           ;; check it again
@@ -341,7 +342,6 @@ a20_failed:
 
 ;; we use the bios function for this because it is the easiest when we are still in 16 bit mode
 print_string:
-    cld          ;; with this instruction we clear the df which we use at lodsb, we clear it so a forward direction is garunteed and df doesnt grow down into some random memory
     lodsb        ;; this loads the byte at [si] into al and also increments si
     or al, al    ;; here we check if al is equal to 0, so in other words if we have reached the end of a string
     jz .done     ;; if we are finished with the string we just jump to something which returns to where print_string was called
@@ -355,6 +355,7 @@ print_string:
 a20_completely_failed:
     ;; here we know we couldnt enable a20 at all so we just print an error message and halt the cpu forever
     mov si, a20_failed_err_msg
+    cld          ;; with this instruction we clear the df which we use at lodsb, we clear it so a forward direction is garunteed and df doesnt grow down into some random memory
     call print_string
     jmp halt
 
