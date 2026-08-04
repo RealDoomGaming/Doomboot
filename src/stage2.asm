@@ -156,7 +156,10 @@ protected_mode_entry:
     ;; checking if long mode is actually supported
     ;; setting up paging
     ;; and only then we can switch
-    call check_CPUID
+    call check_CPUID    ;; check for CPUID support
+
+    ;; before we can detect the presence of long mode we have to see if the extended functions of the CPUID are supported on the cpu
+    call check_long_mode_support
 
     jmp pm_halt
 
@@ -187,6 +190,25 @@ check_CPUID:
 ;; if its supported we just jump back to continue with the setup of jumping into long mode
 .supported
     ret 
+
+check_long_mode_support:
+    mov eax, CPUID_EXTENSIONS       ;; we move our first extended leave into eax to check if the cpu even supports them
+    cpuid                           ;; with this eax becomes the max supported extended leaf
+    cmp eax, CPUID_EXT_FEATURES     ;; and here we compare if eax is bigger or equal to 0x80000001
+    ;; jb stands for jump if below
+    jb .no_long_mode                ;; if the cpu cant report long mode support then it probably doesnt have long mode either
+
+    ;; if extended function can be used we can check if long mode is supported
+    mov eax, CPUID_EXT_FEATURES     ;; we move the check for long mode into eax 
+    cpuid                           ;; query the extended feature
+    test edx, CPUID_EDX_EXT_FEAT_LM ;; if bit 29 in edx is 1 then long mode is supported else its not
+    jz .lm_not_supported            ;;
+    ;; else if it is supported we ret
+    ret
+.lm_not_supported
+    mov ebx, lm_error_msg
+    call pm_print_setup
+    jmp pm_halt
 
 clear_screen:
     pusha
@@ -228,6 +250,7 @@ pm_print_setup:
 
 pm_success_msg db "Successfully entered protected mode.", 13, 10, 0 ;; our success message for enabeling protected mode
 CPUID_error_msg db "Couldnt detect the presence of CPUID.", 13, 10, 0 ;; our error message for failing to detect CPUID
+lm_error_msg db "Couldnt detect the presence of Long Mode.", 13, 10, 0 ;; our error message for failing to detect Long Mode
 
 pm_halt:
     jmp pm_halt
