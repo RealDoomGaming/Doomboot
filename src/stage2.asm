@@ -164,7 +164,22 @@ protected_mode_entry:
     ;; then we have to lastly set up paging and enable it before jumping into long mode
     call set_up_paging
 
+    ;; then after enabeling PAE and setting up paging we have to switch to compatibility mode
+    call comp_mode
+
     jmp pm_halt
+
+comp_mode:
+    ;; firstly for compatibility mode we want to set the LM bit
+    mov ecx, EFER_MSR       ;; set what to read from the EFER
+    rdmsr                   ;; read model specific register (output goes into eax)
+    or eax, EFER_LM_ENABLE  ;; enable long mode by setting the 8th bit
+    wrmsr                   ;; write the EFER back to it
+
+    ;; and then we can enable paging and ensure pm is already set
+    mov eax, cr0    ;; we take the current value from cr0
+    or eax, CR0_PG_ENABLE | CR0_PM_ENABLE   ;; and enable paging and protected mode by setting the first and the 31st bit
+    mov cr0, eax    ;; then we se the old value in cr0 back to the new one where paging and protected mode is enabled
 
 set_up_paging:
     ;; here we just set up the memory addresses and fill it with data (0s)
@@ -201,8 +216,13 @@ set_up_paging:
     mov DWORD [edi], ebx    ;; we move the value of ebx into the value at the address of edi (the starting address of the entry)
     add ebx, PAGE_SIZE      ;; then we add 0x1000 to ebx so the next time it will point to the next page (this doesnt change our PT_PRESNT | PT_READABLE from before)
     add edi, SIZEOF_PT_ENTRY ;; here we go to the next page table
-    loop .set_entry         ;; then we go to the next entry
+    loop .set_entry         ;; then we go to the next entry (loop decrements ecx until is 0 then it wont go back so set_entry)
 
+    ;; then we can enable PAE using the cr4 of the cpu
+    mov eax, cr4            ;; we take the value from cr4 (is a controll register the cpu uses for various process features) into eax
+    or eax, CR4_PAE_ENABLE  ;; we only change bit 5 to 1 in the eax and that is why we use OR here
+    mov cr4, eax            ;; and then put it back into cr4
+    ret                     ;; return here
 
 
 ;; in this function we check if the CPUID instruction is supported by attempting to flip the the ID bit, so bit 21, in the EFLAGS register

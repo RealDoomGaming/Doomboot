@@ -22,3 +22,13 @@ PT_READABLE equ 2
 ENTRIES_PER_PT equ 512      ;; this is 2MB since each entry has 8 bytes and each table is 4KB
 SIZEOF_PT_ENTRY equ 8       ;; each entry in a 64bit page table is 8 byte
 PAGE_SIZE equ 0x1000        ;; this is the size of the physical memory of all pages (4096MB)
+;; this is used for enabeling PAE (Physical address extension)
+CR4_PAE_ENABLE equ 1 << 5
+
+;; these are used for setting the long mode bit
+EFER_MSR equ 0xC0000080     ;; this will be used for reading the EFER
+EFER_LM_ENABLE equ 1 << 8   ;; and this will be used for setting the 8th bit (long mode bit)
+
+;; the next two are used for enabeling paging and enabeling protected mode (if its not already enabled)
+CR0_PM_ENABLE equ 1 << 0
+CR0_PG_ENABLE equ 1 << 31
