@@ -1,0 +1,2 @@
+;; file for any flags we may use in the second stage of the bootloader
+EFLAGS_ID equ 1 << 21   ;; we use this to detect if the CPUID instruction is available, and we do this by testing if this can be flipped

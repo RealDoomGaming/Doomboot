@@ -124,6 +124,9 @@ DATA64 equ gdt_data_64bit-gdt_start     ;; yep
 
 
 [bits 32] 
+
+%include "flags.asm" 
+
 ;; I think these are relatively self explanetory
 VIDEO equ 0xB8000
 WHITE_ON_BLACK equ 0x0F
@@ -147,7 +150,18 @@ protected_mode_entry:
 
     call pm_print_setup          ;; doing the important setup beforehand
 
+    ;; now after we are in protected mode, the next step would be to go into long mode (64 bit)
+    ;; but before going into long mode we have to do some other stuff like:
+    ;; check if CPUID can be used since we need it to check if long mode is supported
+    ;; checking if long mode is actually supported
+    ;; setting up paging
+    ;; and only then we can switch
+    call check_CPUID
+
     jmp pm_halt
+
+check_CPUID:
+
 
 clear_screen:
     pusha
