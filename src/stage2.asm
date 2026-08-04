@@ -179,11 +179,12 @@ check_CPUID:
 
     xor eax, ecx    ;; then we test if the bit in eax was successfully flipped (if eax != ecx)
     jnz .supported  ;; if it was flipped then its supported
+;; it its not supported we fall into this label here and print an error message + halt
 .not_supported
     mov ebx, CPUID_error_msg
     call pm_print_setup
     jmp pm_halt
-
+;; if its supported we just jump back to continue with the setup of jumping into long mode
 .supported
     ret 
 
