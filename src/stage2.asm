@@ -160,8 +160,32 @@ protected_mode_entry:
 
     jmp pm_halt
 
+;; in this function we check if the CPUID instruction is supported by attempting to flip the the ID bit, so bit 21, in the EFLAGS register
+;; if it gets flipped then CPUID is available and we can use it
 check_CPUID:
+    pushfd          ;; firstly we preserve everything by pushing it onto the stack
+    pop eax         ;; and then we pop off eax because we want to use it later
 
+    mov ecx, eax    ;; but we also want to save the original value in eax for later so we can compare it
+    xor eax, EFLAGS_ID  ;; then we try to flip it
+
+    push eax        ;; then we save it to the eflags
+    popfd           ;; pop and push again
+    pushfd          ;; here we restore it from the eflags
+    pop eax         ;; and pop eax off again
+
+    push ecx        ;; and restore eflags to its original value again
+    popfd
+
+    xor eax, ecx    ;; then we test if the bit in eax was successfully flipped (if eax != ecx)
+    jnz .supported  ;; if it was flipped then its supported
+.not_supported
+    mov ebx, CPUID_error_msg
+    call pm_print_setup
+    jmp pm_halt
+
+.supported
+    ret 
 
 clear_screen:
     pusha
@@ -201,7 +225,8 @@ pm_print_setup:
     popa
     ret
 
-pm_success_msg db "Successfully entered protected mode.", 0 ;; our success message
+pm_success_msg db "Successfully entered protected mode.", 13, 10, 0 ;; our success message for enabeling protected mode
+CPUID_error_msg db "Couldnt detect the presence of CPUID.", 13, 10, 0 ;; our error message for failing to detect CPUID
 
 pm_halt:
     jmp pm_halt
