@@ -161,6 +161,9 @@ protected_mode_entry:
     ;; before we can detect the presence of long mode we have to see if the extended functions of the CPUID are supported on the cpu
     call check_long_mode_support
 
+    ;; then we have to lastly set up paging before jumping into long mode
+
+
     jmp pm_halt
 
 ;; in this function we check if the CPUID instruction is supported by attempting to flip the the ID bit, so bit 21, in the EFLAGS register
@@ -183,12 +186,12 @@ check_CPUID:
     xor eax, ecx    ;; then we test if the bit in eax was successfully flipped (if eax != ecx)
     jnz .supported  ;; if it was flipped then its supported
 ;; it its not supported we fall into this label here and print an error message + halt
-.not_supported
+.not_supported:
     mov ebx, CPUID_error_msg
     call pm_print_setup
     jmp pm_halt
 ;; if its supported we just jump back to continue with the setup of jumping into long mode
-.supported
+.supported:
     ret 
 
 check_long_mode_support:
@@ -196,7 +199,7 @@ check_long_mode_support:
     cpuid                           ;; with this eax becomes the max supported extended leaf
     cmp eax, CPUID_EXT_FEATURES     ;; and here we compare if eax is bigger or equal to 0x80000001
     ;; jb stands for jump if below
-    jb .no_long_mode                ;; if the cpu cant report long mode support then it probably doesnt have long mode either
+    jb .lm_not_supported            ;; if the cpu cant report long mode support then it probably doesnt have long mode either so we can just do the same as if we didnt have long mode
 
     ;; if extended function can be used we can check if long mode is supported
     mov eax, CPUID_EXT_FEATURES     ;; we move the check for long mode into eax 
@@ -205,7 +208,7 @@ check_long_mode_support:
     jz .lm_not_supported            ;;
     ;; else if it is supported we ret
     ret
-.lm_not_supported
+.lm_not_supported:
     mov ebx, lm_error_msg
     call pm_print_setup
     jmp pm_halt
@@ -229,6 +232,7 @@ clear_screen:
 pm_print_setup:
     pusha
     mov edx, VIDEO   ;; the video memory is at 0xB8000
+    xor ecx, ecx     ;; ecx will track our current column so we know when to start a new line
 
 ;; we need a new print since we are now in 32 bit mode and cant call bios anymore
 .pm_print_string:
@@ -238,11 +242,29 @@ pm_print_setup:
     cmp al, 0           ;; check if we are at the end of the string via the null terminator
     je .pm_end_print     ;; if it has ended we jump to a function which returns to where pm_print_string was called
 
-    mov [edx], ax       ;; we store the character and attribute in the video memory which basically "prints" it
-    add ebx, 1          ;; we go to the next character in our string
-    add edx, 2          ;; we go to the next video memory position
+    cmp al, 13          ;; check if we have a carriage return
+    jmp .pm_skip_char    ;; if yes then we skip the entire character
 
-    jmp .pm_print_string ;; and then we have our loop
+    cmp al, 10          ;; check if we have hit a new line
+    jmp .pm_print_new_line ;; then we print a line
+
+    mov [edx], ax       ;; we store the character and attribute in the video memory which basically "prints" it
+    add edx, 2          ;; we go to the next video memory position
+    inc ecx             ;; we have to continue in this row since we printed one more character
+
+    cmp ecx, 80         ;; have we hit the edge of the screen
+    jne .pm_skip_char   ;; if not next character
+                        ;; else if we have hit a the edge of the screen then we fall through to go to the next line
+.pm_print_new_line:
+    mov eax, 80     ;; max character in one screen
+    sub eax, ecx    ;; calculate how man columns are left in this row
+    imul eax, eax, 2    ;; we convert the value in eax to bytes, we have 2 bytes per cell (one char)
+    add edx, eax    ;; then we jump to the video pointer at the start of the next row
+    xor ecx, ecx    ;; and reset the column counter
+
+.pm_skip_char:
+    add ebx, 1      ;; we continue to the next character
+    jmp .pm_print_string
 
 .pm_end_print:
     popa
