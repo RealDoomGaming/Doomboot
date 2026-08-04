@@ -161,10 +161,49 @@ protected_mode_entry:
     ;; before we can detect the presence of long mode we have to see if the extended functions of the CPUID are supported on the cpu
     call check_long_mode_support
 
-    ;; then we have to lastly set up paging before jumping into long mode
-
+    ;; then we have to lastly set up paging and enable it before jumping into long mode
+    call set_up_paging
 
     jmp pm_halt
+
+set_up_paging:
+    ;; here we just set up the memory addresses and fill it with data (0s)
+    mov edi, PML4T_ADDR     ;; we move the address of where the page table starts into edi
+    mov cr3, edi            ;; and then let the cpu know where it starts
+
+    xor eax, eax            ;; then we clear eax for later usage
+    mov ecx, SIZEOF_PAGE_TABLE  ;; then we set ecx to 4096
+    rep stosd               ;; this is where the magic happens -> rep stosd writes 4 * SIZEOF_PAGE_TABLE times the value in eax, so 0 since we zeroed it our before
+
+    mov edi, cr3            ;; after the loop before from rep stosd, edi has been set to 4096 so points past the page tables, but we dont want that so we set it back to the start
+
+    ;; now that we have data on there we can built the page table entries
+    ;; we have to built single page table entry values with bitwise operations
+    ;; firstly we move whatever we get from the bitwise operation to the address edi was at, and that was the start of the page table, so we make our first entry
+    ;; 1. PDPT_ADDR & PT_ADDR_MASK -> that takes 0x2000 and ANDs it with the mask which results in the low bytes getting stripped of the address (they are reserved for flags, not for address bits)
+    ;; 2. PT_PRESENT -> ORs in the bit 0 (value 1) so this becomes present (valid and in use)
+    ;; 3. PT_READABLE -> ORs in the bit 1 (value 2) so this becomes readable/writeable
+    mov DWORD [edi], PDPT_ADDR & PT_ADDR_MASK | PT_PRESENT | PT_READABLE
+
+    ;; then the same pattern repeats for the next two entries too with the only different that we move edi to a new location and we write the values we get from the bitwise operations to the next address of the next table page entry
+    mov edi, PDPT_ADDR  ;; we move edi to the starting address of the pdpt
+    mov DWORD [edi], PDT_ADDR & PT_ADDR_MASK | PT_PRESENT | PT_READABLE
+
+    mov edi, PDT_ADDR   ;; we move edi to the starting address of pdt
+    mov DWORD [edi], PT_ADDR & PT_ADDR_MASK | PT_PRESENT | PT_READABLE
+
+    ;; and after we have set up all that we can fill in the pages
+    mov edi, PT_ADDR        ;; mov edi back to the starting address
+    mov ebx, PT_PRESENT | PT_READABLE   ;; this will be value 3 and the future starting value for each entry
+    mov ecx, ENTRIES_PER_PT ;; 1 full page table addresses 2 MB and ecx is the loop counter later
+
+.set_entry:
+    mov DWORD [edi], ebx    ;; we move the value of ebx into the value at the address of edi (the starting address of the entry)
+    add ebx, PAGE_SIZE      ;; then we add 0x1000 to ebx so the next time it will point to the next page (this doesnt change our PT_PRESNT | PT_READABLE from before)
+    add edi, SIZEOF_PT_ENTRY ;; here we go to the next page table
+    loop .set_entry         ;; then we go to the next entry
+
+
 
 ;; in this function we check if the CPUID instruction is supported by attempting to flip the the ID bit, so bit 21, in the EFLAGS register
 ;; if it gets flipped then CPUID is available and we can use it
