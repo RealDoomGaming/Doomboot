@@ -181,6 +181,8 @@ comp_mode:
     or eax, CR0_PG_ENABLE | CR0_PM_ENABLE   ;; and enable paging and protected mode by setting the first and the 31st bit
     mov cr0, eax    ;; then we se the old value in cr0 back to the new one where paging and protected mode is enabled
 
+    ret
+
 set_up_paging:
     ;; here we just set up the memory addresses and fill it with data (0s)
     mov edi, PML4T_ADDR     ;; we move the address of where the page table starts into edi
