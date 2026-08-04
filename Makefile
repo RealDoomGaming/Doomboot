@@ -6,14 +6,15 @@ ST2  := src/stage2.asm
 BIN1 := build/stage1.img
 BIN2 := build/stage2.img
 IMG  := build/disk.img
+INCDIR := src/
 
 all: $(IMG)
 
 $(BIN1): $(ST1) | build
-	$(ASM) -f bin $(ST1) -o $(BIN1)
+	$(ASM) -f bin -i $(INCDIR) $(ST1) -o $(BIN1)
 
 $(BIN2): $(ST2) | build
-	$(ASM) -f bin $(ST2) -o $(BIN2)
+	$(ASM) -f bin -i $(INCDIR) $(ST2) -o $(BIN2)
 
 $(IMG): $(BIN1) $(BIN2)
 	$(CAT) $(BIN1) $(BIN2) > $(IMG)
