@@ -243,10 +243,10 @@ pm_print_setup:
     je .pm_end_print     ;; if it has ended we jump to a function which returns to where pm_print_string was called
 
     cmp al, 13          ;; check if we have a carriage return
-    jmp .pm_skip_char    ;; if yes then we skip the entire character
+    je .pm_skip_char    ;; if yes then we skip the entire character
 
     cmp al, 10          ;; check if we have hit a new line
-    jmp .pm_print_new_line ;; then we print a line
+    je .pm_print_new_line ;; then we print a line
 
     mov [edx], ax       ;; we store the character and attribute in the video memory which basically "prints" it
     add edx, 2          ;; we go to the next video memory position
