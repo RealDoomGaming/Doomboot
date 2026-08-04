@@ -163,14 +163,14 @@ protected_mode_entry:
 ;; in this function we check if the CPUID instruction is supported by attempting to flip the the ID bit, so bit 21, in the EFLAGS register
 ;; if it gets flipped then CPUID is available and we can use it
 check_CPUID:
-    pushfd          ;; firstly we preserve everything by pushing it onto the stack
-    pop eax         ;; and then we pop off eax because we want to use it later
+    pushfd          ;; firstly we push all eflags onto the stack
+    pop eax         ;; and then we pop the eflags into the eax register
 
-    mov ecx, eax    ;; but we also want to save the original value in eax for later so we can compare it
-    xor eax, EFLAGS_ID  ;; then we try to flip it
+    mov ecx, eax    ;; but we also want to save the original value of the elfags in eax for later so we can compare it
+    xor eax, EFLAGS_ID  ;; then we try to flip bit 21 in the eax register
 
-    push eax        ;; then we save it to the eflags
-    popfd           ;; pop and push again
+    push eax        ;; then we push the changed eflags value
+    popfd           ;; and pop it back into the eflags via popfd (with this we try to write the flipped bit into the real eflags register, this only works if the CPU supports CPUID)
     pushfd          ;; here we restore it from the eflags
     pop eax         ;; and pop eax off again
 
