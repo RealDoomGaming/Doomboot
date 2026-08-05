@@ -355,7 +355,8 @@ long_mode_entry:
 
 ;; the print is like the one in 32 bit mode but with 64 bit registers now
 lm_print_setup:
-    mov rdi, VIDEO64
+    xor rcx, rcx
+    mov rdx, VIDEO64
 
 .lm_print_string:
     mov al,  [rbx]
@@ -370,8 +371,12 @@ lm_print_setup:
     cmp al, 10          
     je .lm_print_new_line 
 
-    mov [rdx], ax
-    jmp .lm_print_string
+    mov [rdx], ax       
+    add rdx, 2         
+    inc rcx             
+
+    cmp rcx, 80         
+    jne .lm_skip_char   
 
 .lm_print_new_line:
     mov rax, 80     
@@ -381,7 +386,7 @@ lm_print_setup:
     xor rcx, rcx    
 
 .lm_skip_char:
-    add rdx, 1      
+    add rbx, 1      
     jmp .lm_print_string
 
 .lm_end_print:
