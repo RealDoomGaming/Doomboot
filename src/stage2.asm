@@ -167,7 +167,10 @@ protected_mode_entry:
     ;; then after enabeling PAE and setting up paging we have to switch to compatibility mode
     call comp_mode
 
-    jmp pm_halt
+    ;; then finally after doing all of that we can far jump into long mode
+    ;; we alread enabled protected mode in the comp_mode label by enabeling the compatibility mode and paging
+    ;; so now we just need to jump into long mode
+    jmp CODE64:long_mode_entry
 
 comp_mode:
     ;; firstly for compatibility mode we want to set the LM bit
@@ -337,5 +340,56 @@ lm_error_msg db "Couldnt detect the presence of Long Mode.", 13, 10, 0 ;; our er
 
 pm_halt:
     jmp pm_halt
+
+[bits 64]
+VIDEO64 equ 0xB8000
+WHITE_ON_BLACK64 equ 0x0F
+SCREEN_WIDTH64 equ 80
+SCREEN_HEIGHT64 equ 25
+
+long_mode_entry:
+    mov rbx, lm_success_msg 
+    call lm_print_setup
+
+    jmp lm_halt
+
+;; the print is like the one in 32 bit mode but with 64 bit registers now
+lm_print_setup:
+    mov rdi, VIDEO64
+
+.lm_print_string:
+    mov al,  [rbx]
+    mov ah, WHITE_ON_BLACK64
+
+    cmp al, 0           
+    je .lm_end_print     
+
+    cmp al, 13          
+    je .lm_skip_char    
+
+    cmp al, 10          
+    je .lm_print_new_line 
+
+    mov [rdx], ax
+    jmp .lm_print_string
+
+.lm_print_new_line:
+    mov rax, 80     
+    sub rax, rcx    
+    imul rax, rax, 2    
+    add rdx, rax    
+    xor rcx, rcx    
+
+.lm_skip_char:
+    add rdx, 1      
+    jmp .lm_print_string
+
+.lm_end_print:
+    ret
+
+lm_halt:
+    jmp lm_halt
+
+lm_success_msg db "Successfully entered Long Mode (64 bit mode).", 13, 10, 0 ;; our success message for entering long mode
 
 times 4096-($-$$) db 0   ;; then at the end we pad our img up with 0s so this file is actually 4096 bytes (8 sectors) long and the bios can even load the second stage
