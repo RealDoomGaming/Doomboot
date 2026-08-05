@@ -10,8 +10,8 @@ This is just a learning experience so I really have no idea where this project m
 - [x] GDT setup
 - [x] Switch to 32-bit protected mode
 - [x] Switch into a second stage bootloader since our nearly has 512 byte
-- [ ] Set up Paging
-- [ ] Switch to 64-bit long mode
+- [x] Set up Paging
+- [x] Switch to 64-bit long mode
 - [ ] Jump into a custom kernel -> Maybe
 
 ## Build & Run
