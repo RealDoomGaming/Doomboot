@@ -1,4 +1,4 @@
-[org 0x8000]
+;; [org 0x8000] when using a linker we dont need this anymore since the linker itself manages where this file starts 
 [bits 16]
 
 ;; we start here with the second stage of our bootloader

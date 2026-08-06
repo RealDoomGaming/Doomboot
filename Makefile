@@ -29,11 +29,11 @@ $(BIN1): $(ST1) | build
 	$(ASM) -f bin -i $(INCDIR) $(ST1) -o $(BIN1)
 
 # compiling stage 2 into elf64 object file so we can merge it with the c kernel later
-$(BIN2): $(ST2) | build
+$(OBJ2): $(ST2) | build
 	$(ASM) -f elf64 -i $(INCDIR) $(ST2) -o $(OBJ2)
 
 # compile the c kernel into an elf64 object file
-$(OBJ_KC): (KERN_C) | build
+$(OBJ_KC): $(KERN_C) | build
 	$(CC) $(CDFLAGS) $(KERN_C) -o $(OBJ_KC)
 
 # linking stage 2 and the kernel together
