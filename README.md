@@ -12,7 +12,7 @@ This is just a learning experience so I really have no idea where this project m
 - [x] Switch into a second stage bootloader since our nearly has 512 byte
 - [x] Set up Paging
 - [x] Switch to 64-bit long mode
-- [ ] Jump into a custom kernel -> Maybe
+- [x] Jump into a small custom kernel
 
 ## Build & Run
 
