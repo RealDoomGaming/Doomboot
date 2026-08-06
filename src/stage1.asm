@@ -4,7 +4,14 @@
 ;; we need this here for our dap later
 STAGE2_SEGMENT  equ 0x0000      ;; this will be combined with the offset later so we can just leave it at 0
 STAGE2_OFFSET   equ 0x8000      ;; where we will load our second stage
-STAGE2_SECTORS  equ 8           ;; this is how many 512 mb sectors to load when we go into the second stage of our bootloader
+;; how many 512 byte sectors to load when we go into the second stage of our bootloader
+;; the Makefile hands this in with -DSTAGE2_SECTORS=... because it also pads the disk
+;; image to that exact size, if the two ever disagreed we would load too little and
+;; jump into memory that was never read off the disk (that was the old triple fault)
+;; the value below is only a fallback for when you assemble this file without make
+%ifndef STAGE2_SECTORS
+    %define STAGE2_SECTORS 32
+%endif
 STAGE2_LBA      equ 1           ;; this is where on the disk the second stage starts, sector 0 is always the boot sector and since stage 2 of our bootloader was written directly after our bootloader it has to be at sector 0
 
 ;; we need to jmp over the bios thingis

@@ -425,7 +425,8 @@ lm_halt:
 
 lm_success_msg db "Successfully entered Long Mode (64 bit mode).", 13, 10, 0 ;; our success message for entering long mode
 
-times 4096-($-$$) db 0   ;; then at the end we pad our img up with 0s so this file is actually 4096 bytes (8 sectors) long and the bios can even load the second stage
+;; we dont need this anymore since because of the linker the file will always be bigger then 4096
+;; times 4096-($-$$) db 0   
 
 ;; has to come after the padding since its not stored on the disk
 section .bss 
