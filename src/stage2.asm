@@ -342,6 +342,11 @@ pm_halt:
     jmp pm_halt
 
 [bits 64]
+
+%include "flags.asm"
+
+extern kernel_main
+
 VIDEO64 equ 0xB8000
 WHITE_ON_BLACK64 equ 0x0F
 SCREEN_WIDTH64 equ 80
@@ -351,10 +356,29 @@ long_mode_entry:
     mov rbx, lm_success_msg 
     call lm_print_setup
 
+    ;; after printing the success message we want to go into the kernel but before that we have to setup a segment register
+    mov ax, DATA64
+    mov ds, ax
+    mov es, ax
+    mov fs, ax 
+    mov gs, ax 
+    mov ss, ax
+
+    ;; then we need to set up a functional stack pointer
+    mov rsp, stack_top
+
+    ;; and then we can call the kernel
+    call kernel_main
+
+    ;; we technically have no use for this now anymore but I will just leave it here
     jmp lm_halt
 
 ;; the print is like the one in 32 bit mode but with 64 bit registers now
 lm_print_setup:
+    ;; we have to save these here so we dont overwrite c variables later on
+    push rax
+    push rdx
+    push rcx
     xor rcx, rcx
     mov rdx, VIDEO64
 
@@ -390,6 +414,10 @@ lm_print_setup:
     jmp .lm_print_string
 
 .lm_end_print:
+    ;; and then pop them off here again
+    pop rcx
+    pop rdx
+    pop rax
     ret
 
 lm_halt:
@@ -398,3 +426,10 @@ lm_halt:
 lm_success_msg db "Successfully entered Long Mode (64 bit mode).", 13, 10, 0 ;; our success message for entering long mode
 
 times 4096-($-$$) db 0   ;; then at the end we pad our img up with 0s so this file is actually 4096 bytes (8 sectors) long and the bios can even load the second stage
+
+;; has to come after the padding since its not stored on the disk
+section .bss 
+align 16
+stack_bottom:
+    resb 16384      ;; reserving 16KB of un-inited memory for the stack
+stack_top:          ;; points to the end of the 16KB stack
